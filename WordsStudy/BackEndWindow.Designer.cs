@@ -34,6 +34,7 @@ namespace WordsStudy
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.приховатиToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.призупинитиToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.revokeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.вийтиToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.вивченоToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.LearnedCheckBox = new WordsStudy.CustomControls.MyCheckBox();
@@ -56,35 +57,47 @@ namespace WordsStudy
             this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.приховатиToolStripMenuItem,
             this.призупинитиToolStripMenuItem,
+            this.revokeToolStripMenuItem,
             this.вийтиToolStripMenuItem,
             this.вивченоToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(149, 92);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(181, 136);
             // 
             // приховатиToolStripMenuItem
             // 
             this.приховатиToolStripMenuItem.Name = "приховатиToolStripMenuItem";
-            this.приховатиToolStripMenuItem.Size = new System.Drawing.Size(148, 22);
+            this.приховатиToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.приховатиToolStripMenuItem.Text = "Приховати";
+            this.приховатиToolStripMenuItem.Click += new System.EventHandler(this.hideToolStripMenuItem_Click);
             // 
             // призупинитиToolStripMenuItem
             // 
             this.призупинитиToolStripMenuItem.Name = "призупинитиToolStripMenuItem";
-            this.призупинитиToolStripMenuItem.Size = new System.Drawing.Size(148, 22);
+            this.призупинитиToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.призупинитиToolStripMenuItem.Text = "Призупинити";
+            this.призупинитиToolStripMenuItem.Click += new System.EventHandler(this.StopToolStripMenuItem_Click);
+            // 
+            // revokeToolStripMenuItem
+            // 
+            this.revokeToolStripMenuItem.Enabled = false;
+            this.revokeToolStripMenuItem.Name = "revokeToolStripMenuItem";
+            this.revokeToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.revokeToolStripMenuItem.Text = "Відновити";
+            this.revokeToolStripMenuItem.Click += new System.EventHandler(this.revokeToolStripMenuItem_Click);
             // 
             // вийтиToolStripMenuItem
             // 
             this.вийтиToolStripMenuItem.Name = "вийтиToolStripMenuItem";
-            this.вийтиToolStripMenuItem.Size = new System.Drawing.Size(148, 22);
+            this.вийтиToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.вийтиToolStripMenuItem.Text = "Вийти";
             this.вийтиToolStripMenuItem.Click += new System.EventHandler(this.ExitToolStripMenuItem_Click);
             // 
             // вивченоToolStripMenuItem
             // 
             this.вивченоToolStripMenuItem.Name = "вивченоToolStripMenuItem";
-            this.вивченоToolStripMenuItem.Size = new System.Drawing.Size(148, 22);
+            this.вивченоToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.вивченоToolStripMenuItem.Text = "Вивчено!";
+            this.вивченоToolStripMenuItem.Click += new System.EventHandler(this.learnedToolStripMenuItem_Click);
             // 
             // LearnedCheckBox
             // 
@@ -130,5 +143,6 @@ namespace WordsStudy
         private System.Windows.Forms.ToolStripMenuItem вийтиToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem вивченоToolStripMenuItem;
         private CustomControls.MyCheckBox LearnedCheckBox;
+        private System.Windows.Forms.ToolStripMenuItem revokeToolStripMenuItem;
     }
 }

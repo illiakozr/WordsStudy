@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
 using WordsStudy.DataContext;
@@ -8,6 +9,9 @@ namespace WordsStudy
 {
     public partial class BackEndWindow : Form
     {
+        // Thread
+        private Thread _sliderThread;
+
         // Cancelation token for stopping Thread
         private CancellationToken _cancellationToken { get; set; }
         private CancellationTokenSource _cancelTokenSource = new CancellationTokenSource();
@@ -18,6 +22,7 @@ namespace WordsStudy
 
         //index of word in the Data list
         private int _wordIndex;
+        private int _wordNumber;
 
         public BackEndWindow()
         {
@@ -30,8 +35,8 @@ namespace WordsStudy
 
         private void StartWordsSlider()
         {
-            Thread sliderThread = new Thread(Display);
-            sliderThread.Start();           
+            _sliderThread = new Thread(Display);
+            _sliderThread.Start();
         }
 
         private void Display()
@@ -48,7 +53,7 @@ namespace WordsStudy
 
                 _wordIndex = rnd.Next(0, DataStorage.WordsDictionary.Count);
                 RecordModel model = DataStorage.WordsDictionary[_wordIndex];
-
+                _wordNumber = model.Number;
                 if (firstWord)
                 {
                     this.BackColor = Color.LightBlue;
@@ -124,8 +129,39 @@ namespace WordsStudy
             {
                 LearnedCheckBox.Enabled = false;
                 DataStorage.WordsDictionary.RemoveAt(_wordIndex);
-                MarkedRecords.LearnedWordsIndexes.Add(_wordIndex);
+                // if after check no words are left for learning - close the window
+                if (!DataStorage.WordsDictionary.Any())
+                {
+                    _cancelTokenSource.Cancel();
+                    this.Close();
+                }
+                MarkedRecords.LearnedWordsIndexes.Add(_wordNumber);
             }
+        }
+
+        private void learnedToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            LearnedCheckBox.Checked = true;
+            LearnedCheckBox_CheckedChanged(sender, e);
+        }
+
+        private void hideToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            this.WindowState = FormWindowState.Minimized;
+        }
+
+        private void StopToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _sliderThread.Suspend();
+            contextMenuStrip1.Items[1].Enabled = false;
+            contextMenuStrip1.Items[2].Enabled = true;
+        }
+
+        private void revokeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _sliderThread.Resume();
+            contextMenuStrip1.Items[1].Enabled = true;
+            contextMenuStrip1.Items[2].Enabled = false;
         }
     }
 }

@@ -141,14 +141,28 @@ namespace WordsStudy
             DataStorage.WordsDictionary.Clear();
             MarkedRecords.LearnedWordsIndexes.Clear();
 
-            foreach (DataGridViewRow row in wordsDataGridView.Rows)
+            IEnumerable<DataGridViewRow> rowsToStudy;
+
+            if (rangeCheckBox.Checked)
+            {
+                int fromIndex = Convert.ToInt32(fromNumericUpDown.Value);
+                int toIndex = Convert.ToInt32(toNumericUpDown.Value);
+                rowsToStudy = wordsDataGridView.Rows.Cast<DataGridViewRow>()
+                    .Where(row => (row.Index + 1 >= fromIndex && row.Index + 1 <= toIndex) 
+                            && !Convert.ToBoolean(row.Cells["studied"].Value));
+            }
+            else
+            {
+                rowsToStudy = wordsDataGridView.Rows.Cast<DataGridViewRow>().Where(row => !Convert.ToBoolean(row.Cells["studied"].Value));
+            }
+
+            foreach (DataGridViewRow row in rowsToStudy)
             {
                 var number = Convert.ToInt32(row.Cells["wordNumber"].Value);
                 var word = row.Cells["Word"].Value ?? "";
                 var translation = row.Cells["Translation"].Value ?? "";
-                bool alredyStudied = Convert.ToBoolean(row.Cells["studied"].Value);
 
-                if (row.IsNewRow || alredyStudied || string.IsNullOrWhiteSpace(word.ToString()) 
+                if (row.IsNewRow || string.IsNullOrWhiteSpace(word.ToString()) 
                     || string.IsNullOrWhiteSpace(translation.ToString()) )
                 {
                     continue;
@@ -158,8 +172,21 @@ namespace WordsStudy
                   Number = number, 
                   Word = word.ToString(),
                   Translation = translation.ToString(),
-                  Studied = alredyStudied
+                  Studied = false
                 });
+            }
+
+            // if no words to study, return from method
+            if (!DataStorage.WordsDictionary.Any())
+            {
+                MessageBox.Show(
+              "Жодного слова до вивчення.",
+              "",
+              MessageBoxButtons.OK,
+              MessageBoxIcon.Information,
+              MessageBoxDefaultButton.Button1);
+
+                return;
             }
 
             // show small form
@@ -170,9 +197,9 @@ namespace WordsStudy
             // mark all learned words
             foreach(int index in MarkedRecords.LearnedWordsIndexes)
             {
-                wordsDataGridView.Rows[index].Cells["studied"].Value = true;
+                wordsDataGridView.Rows.Cast<DataGridViewRow>().First(row => Convert.ToInt32(row.Cells["wordNumber"].Value) == index).Cells["studied"].Value = true;
                 // change color of row to green
-                wordsDataGridView.Rows[index].DefaultCellStyle.BackColor = Color.LightGreen;
+                wordsDataGridView.Rows.Cast<DataGridViewRow>().First(row => Convert.ToInt32(row.Cells["wordNumber"].Value) == index).DefaultCellStyle.BackColor = Color.LightGreen;
             }
             this.Visible = true;
         }
@@ -226,5 +253,18 @@ namespace WordsStudy
                 MessageBoxIcon.Information,
                 MessageBoxDefaultButton.Button1 );
         }
+
+        private void rangeCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (rangeCheckBox.Checked)
+            {
+                rangeGroupBox.Enabled = true;
+            }
+            else
+            {
+                rangeGroupBox.Enabled = false;
+            }            
+        }
+
     }
 }
