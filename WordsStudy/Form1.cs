@@ -36,7 +36,7 @@ namespace WordsStudy
 
             foreach (RecordModel model in recordsCollection.RecordModel)
             {
-                wordsDataGridView.Rows.Add(1, model.Word, model.Translation, model.Studied);
+                wordsDataGridView.Rows.Add(model.Number, model.Word, model.Translation, model.Studied);
                 // change color to green for checked words
             }
         }
@@ -91,7 +91,7 @@ namespace WordsStudy
 
                     for(int i = 0; i < lastIndex; i++)
                     {
-                        wordsDataGridView.Rows.Add(i+1, words[i], translation[i], false);
+                        wordsDataGridView.Rows.Add(wordsDataGridView.Rows.Count + 1, words[i], translation[i], false);
                     }
 
                     
