@@ -25,20 +25,23 @@ namespace WordsStudy
 
         private void LoadWordsFromFile()
         {
-            XmlSerializer serializer = new XmlSerializer(typeof(RecordModelCollection));
-
-            RecordModelCollection recordsCollection;
-
-            using (FileStream fs = new FileStream(FilePath, FileMode.OpenOrCreate))
+            if (File.Exists(FilePath))
             {
-                recordsCollection = (RecordModelCollection)serializer.Deserialize(fs);
-            }
+                XmlSerializer serializer = new XmlSerializer(typeof(RecordModelCollection));
 
-            foreach (RecordModel model in recordsCollection.RecordModel)
-            {
-                wordsDataGridView.Rows.Add(model.Number, model.Word, model.Translation, model.Studied);
-                // change color to green for checked words
-            }
+                RecordModelCollection recordsCollection;
+
+                using (FileStream fs = new FileStream(FilePath, FileMode.OpenOrCreate))
+                {
+                    recordsCollection = (RecordModelCollection)serializer.Deserialize(fs);
+                }
+
+                foreach (RecordModel model in recordsCollection.RecordModel)
+                {
+                    wordsDataGridView.Rows.Add(model.Number, model.Word, model.Translation, model.Studied);
+                    // change color to green for checked words
+                }
+            }      
         }
 
         // change color to green for checked words
@@ -136,11 +139,8 @@ namespace WordsStudy
             }
         }
 
-        private void startLearnBtn_Click(object sender, EventArgs e)
+        private void WordsLoaderToDataContext()
         {
-            DataStorage.WordsDictionary.Clear();
-            MarkedRecords.LearnedWordsIndexes.Clear();
-
             IEnumerable<DataGridViewRow> rowsToStudy;
 
             if (rangeCheckBox.Checked)
@@ -148,7 +148,7 @@ namespace WordsStudy
                 int fromIndex = Convert.ToInt32(fromNumericUpDown.Value);
                 int toIndex = Convert.ToInt32(toNumericUpDown.Value);
                 rowsToStudy = wordsDataGridView.Rows.Cast<DataGridViewRow>()
-                    .Where(row => (row.Index + 1 >= fromIndex && row.Index + 1 <= toIndex) 
+                    .Where(row => (row.Index + 1 >= fromIndex && row.Index + 1 <= toIndex)
                             && !Convert.ToBoolean(row.Cells["studied"].Value));
             }
             else
@@ -162,19 +162,28 @@ namespace WordsStudy
                 var word = row.Cells["Word"].Value ?? "";
                 var translation = row.Cells["Translation"].Value ?? "";
 
-                if (row.IsNewRow || string.IsNullOrWhiteSpace(word.ToString()) 
-                    || string.IsNullOrWhiteSpace(translation.ToString()) )
+                if (row.IsNewRow || string.IsNullOrWhiteSpace(word.ToString())
+                    || string.IsNullOrWhiteSpace(translation.ToString()))
                 {
                     continue;
                 }
 
-                DataStorage.WordsDictionary.Add(new RecordModel { 
-                  Number = number, 
-                  Word = word.ToString(),
-                  Translation = translation.ToString(),
-                  Studied = false
+                DataStorage.WordsDictionary.Add(new RecordModel
+                {
+                    Number = number,
+                    Word = word.ToString(),
+                    Translation = translation.ToString(),
+                    Studied = false
                 });
             }
+        }
+
+        private void startLearnBtn_Click(object sender, EventArgs e)
+        {
+            DataStorage.WordsDictionary.Clear();
+            MarkedRecords.LearnedWordsIndexes.Clear();
+
+            WordsLoaderToDataContext();
 
             // if no words to study, return from method
             if (!DataStorage.WordsDictionary.Any())
@@ -254,6 +263,7 @@ namespace WordsStudy
                 MessageBoxDefaultButton.Button1 );
         }
 
+        // on/off options tab
         private void rangeCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             if (rangeCheckBox.Checked)
@@ -266,5 +276,30 @@ namespace WordsStudy
             }            
         }
 
+        // start word trainer
+        private void trainingStartBtn_Click(object sender, EventArgs e)
+        {
+            DataStorage.WordsDictionary.Clear();
+            WordsLoaderToDataContext();
+
+            // if no words to study, return from method
+            if (!DataStorage.WordsDictionary.Any())
+            {
+                MessageBox.Show(
+              "Жодного слова до тренування.",
+              "",
+              MessageBoxButtons.OK,
+              MessageBoxIcon.Information,
+              MessageBoxDefaultButton.Button1);
+
+                return;
+            }
+
+            WordTrainer wordTrainer = new WordTrainer();
+            this.Visible = false;
+            wordTrainer.ShowDialog();
+
+            this.Visible = true;
+        }
     }
 }
