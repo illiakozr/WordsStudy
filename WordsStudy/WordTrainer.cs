@@ -78,6 +78,9 @@ namespace WordsStudy
             _rightLettersIndex = 0;
         }
 
+        /// <summary>
+        /// Highlight letters when the typed user's word is incorrect
+        /// </summary>
         private void WordValidator()
         {
             RecordModel model = DataStorage.WordsDictionary[_wordIndex];
@@ -127,6 +130,18 @@ namespace WordsStudy
             _rightLettersIndex++;
             RichWordTextBox.Select(0, _rightLettersIndex);
             RichWordTextBox.SelectionBackColor = Color.LightGreen;
+        }
+
+        /// <summary>
+        /// Change color of text to white during typing text
+        /// </summary>
+        /// <param name="sender">sender</param>
+        /// <param name="e">event</param>
+        private void RichWordTextBox_TextChanged(object sender, EventArgs e)
+        {
+            var textLength = RichWordTextBox.Text.Length;
+            RichWordTextBox.Select(textLength, textLength + 100);
+            RichWordTextBox.SelectionBackColor = Color.White;
         }
     }
 }

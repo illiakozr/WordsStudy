@@ -6,6 +6,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Security;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Serialization;
 using WordsStudy.DataContext;
@@ -14,34 +15,46 @@ namespace WordsStudy
 {
     public partial class Form1 : Form
     {
-        public const string FilePath = "wordsDB.xml";
+        public const string WordsDBPath = "wordsDB.xml";
 
         public Form1()
         {
             InitializeComponent();
-            LoadWordsFromFile();
+            LoadWordsFromFile(WordsDBPath);
             ChangeColorRow();
         }
 
-        private void LoadWordsFromFile()
+        private Task LoadWordsFromFile(string filePath)
         {
-            if (File.Exists(FilePath))
+            if (File.Exists(filePath))
             {
                 XmlSerializer serializer = new XmlSerializer(typeof(RecordModelCollection));
 
-                RecordModelCollection recordsCollection;
-
-                using (FileStream fs = new FileStream(FilePath, FileMode.OpenOrCreate))
+                try
                 {
-                    recordsCollection = (RecordModelCollection)serializer.Deserialize(fs);
-                }
+                    RecordModelCollection recordsCollection;
+                    using (FileStream fs = new FileStream(filePath, FileMode.Open))
+                    {
+                        recordsCollection = (RecordModelCollection)serializer.Deserialize(fs);
+                    }
 
-                foreach (RecordModel model in recordsCollection.RecordModel)
+                    foreach (RecordModel model in recordsCollection.RecordModel)
+                    {
+                        wordsDataGridView.Rows.Add(model.Number, model.Word, model.Translation, model.Studied);
+                    }
+
+                    return Task.CompletedTask;
+                } catch (Exception ex)
                 {
-                    wordsDataGridView.Rows.Add(model.Number, model.Word, model.Translation, model.Studied);
-                    // change color to green for checked words
+                    MessageBox.Show($"Error.\n\nError message: {ex.Message}\n\n" +
+                                    $"Details:\n\n{ex.StackTrace}");
+                    return Task.FromException(ex);
                 }
-            }      
+            } 
+            else
+            {
+                return Task.CompletedTask;
+            }   
         }
 
         // change color to green for checked words
@@ -55,60 +68,95 @@ namespace WordsStudy
             }
         }
 
-        private void importBtn_Click(object sender, EventArgs e)
+        // import words from file
+        private async void importBtn_Click(object sender, EventArgs e)
         {
-            openFileDialog1.Filter = "Excel Files|*.xls;*.xlsx;*.xlsm";
+            openFileDialog1.Filter = "Excel Files (*.xlsx; *.xls)|*.xlsx;*.xls|XML Files (*.xml)|*.xml";
 
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
-                try
+                Task importFileTask = null;
+                if (openFileDialog1.FileName.EndsWith(".xlsx") || openFileDialog1.FileName.EndsWith(".xls"))
                 {
-                    string filePath = openFileDialog1.FileName;
-                    //Создаём приложение.
-                    var ObjExcel = new Microsoft.Office.Interop.Excel.Application();
-                    //Открываем книгу. 
-                    Workbook ObjWorkBook = ObjExcel.Workbooks.Open(filePath, 0, false, 5, "", "", false, XlPlatform.xlWindows, "", true, false, 0, true, false, false);
-                    //Выбираем таблицу(лист).
-                    Worksheet ObjWorkSheet = (Worksheet)ObjWorkBook.Sheets[1];
+                    importFileTask = new Task(() => ReadFileAsync(openFileDialog1.FileName));
+                } 
+                else if (openFileDialog1.FileName.EndsWith(".xml"))
+                {
+                    importFileTask = new Task(() => LoadWordsFromFile(openFileDialog1.FileName));
+                }
+                importFileTask.Start();
+                await importFileTask;
 
-                    // Указываем номер столбца (таблицы Excel) из которого будут считываться данные.
-                    int numCol1 = 1;
+                ChangeColorRow();
 
-                    Range usedColumn1 = ObjWorkSheet.UsedRange.Columns[numCol1];
-                    Array myvalues1 = (Array)usedColumn1.Cells.Value2;
-                    string[] words = myvalues1.OfType<object>().Select(o => Convert.ToString(o)).ToArray();
+                if (importFileTask.IsCompleted && !importFileTask.IsFaulted)
+                {
+                    MessageBox.Show(
+                      "Файл успішно імпортовано.", "",
+                      MessageBoxButtons.OK,
+                      MessageBoxIcon.Information,
+                      MessageBoxDefaultButton.Button1);
+                }
+            }
+        }
 
-                    //////////////////////////////////////////////////////////////////////////
+        // read file content
+        private Task ReadFileAsync(string filePath)
+        {
+            Microsoft.Office.Interop.Excel.Application ObjExcel = null;
+            Workbook ObjWorkBook = null;
+            try
+            {
+                //Create application.
+                ObjExcel = new Microsoft.Office.Interop.Excel.Application();
+                //Open book. 
+                ObjWorkBook = ObjExcel.Workbooks.Open(filePath, 0, false, 5, "", "", false, XlPlatform.xlWindows, "", true, false, 0, true, false, false);
+                //Select table(sheet).
+                Worksheet ObjWorkSheet = (Worksheet)ObjWorkBook.Sheets[1];
 
-                    int numCol2 = 2;
+                // Get the used range of the worksheet
+                Range usedRange = ObjWorkSheet.UsedRange;
+                int columnWordsNumber = 1;
+                for (int i = 1; i <= usedRange.Columns.Count; i += 2)
+                {
+                    // Get the range of the two columns you want to select
+                    Range wordsColumn = usedRange.Columns[columnWordsNumber];
+                    Range translationColumn = usedRange.Columns[columnWordsNumber + 1];
+                    Range range = ObjWorkSheet.Range[wordsColumn, translationColumn];
+                    // Get the values in the range
+                    object[,] valuePairs = range.Value;
 
-                    Range usedColumn2 = ObjWorkSheet.UsedRange.Columns[numCol2];
-                    Array myvalues2 = (Array)usedColumn2.Cells.Value2;
-                    string[] translation = myvalues2.OfType<object>().Select(o => Convert.ToString(o)).ToArray();
-
-                    // Выходим из программы Excel.
-                    ObjExcel.Quit();
-
-                    // find shorter array
-                    int lastIndex = words.Length < translation.Length ? words.Length : translation.Length;
-
-                    for(int i = 0; i < lastIndex; i++)
+                    // insert words pair into grid view
+                    for (int row = 1; row <= valuePairs.GetLength(0); row++)
                     {
-                        wordsDataGridView.Rows.Add(wordsDataGridView.Rows.Count + 1, words[i], translation[i], false);
+                        string word = valuePairs[row, 1]?.ToString();
+                        string translation = valuePairs[row, 2]?.ToString();
+                        if (!string.IsNullOrWhiteSpace(word) && !string.IsNullOrWhiteSpace(translation))
+                        {
+                            wordsDataGridView.Rows.Add(wordsDataGridView.Rows.Count + 1, word, translation, false);
+                        }
                     }
+                    columnWordsNumber += 2;
+                }
 
-                    
-                }
-                catch (SecurityException ex)
-                {
-                    MessageBox.Show($"Security error.\n\nError message: {ex.Message}\n\n" +
-                    $"Details:\n\n{ex.StackTrace}");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error.\n\nError message: {ex.Message}\n\n" +
-                   $"Details:\n\n{ex.StackTrace}");
-                }
+                return Task.CompletedTask;
+            }
+            catch (SecurityException ex)
+            {
+                MessageBox.Show($"Security error.\n\nError message: {ex.Message}\n\n" +
+                $"Details:\n\n{ex.StackTrace}");
+                return Task.FromException(ex);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error.\n\nError message: {ex.Message}\n\n" +
+               $"Details:\n\n{ex.StackTrace}");
+                return Task.FromException(ex);
+            }
+            finally
+            {
+                ObjWorkBook.Close();
+                ObjExcel.Quit();
             }
         }
 
@@ -222,7 +270,7 @@ namespace WordsStudy
         // save Changes into file
         private void saveBtn_Click(object sender, EventArgs e)
         {
-            List<RecordModel> records = new List<RecordModel>();
+            var records = new List<RecordModel>();
 
             foreach (DataGridViewRow row in wordsDataGridView.Rows)
             {
@@ -231,8 +279,8 @@ namespace WordsStudy
                 var translation = row.Cells["Translation"].Value ?? "";
                 bool alredyStudied = Convert.ToBoolean(row.Cells["studied"].Value);
 
-                if (row.IsNewRow || string.IsNullOrWhiteSpace(word.ToString())
-                    || string.IsNullOrWhiteSpace(translation.ToString()))
+                if (row.IsNewRow || string.IsNullOrWhiteSpace(word?.ToString())
+                    || string.IsNullOrWhiteSpace(translation?.ToString()))
                 {
                     continue;
                 }
@@ -246,7 +294,7 @@ namespace WordsStudy
                 RecordModel = records.ToArray()
             };
 
-            using ( FileStream fs = new FileStream(FilePath, FileMode.Create))
+            using ( FileStream fs = new FileStream(WordsDBPath, FileMode.Create))
             {
                 if (records.Any())
                 {

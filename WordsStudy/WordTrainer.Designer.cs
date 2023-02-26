@@ -79,6 +79,7 @@ namespace WordsStudy
             this.RichWordTextBox.Size = new System.Drawing.Size(255, 29);
             this.RichWordTextBox.TabIndex = 4;
             this.RichWordTextBox.Text = "";
+            this.RichWordTextBox.TextChanged += new System.EventHandler(this.RichWordTextBox_TextChanged);
             // 
             // groupBox1
             // 

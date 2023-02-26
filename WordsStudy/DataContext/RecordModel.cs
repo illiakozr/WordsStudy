@@ -3,6 +3,9 @@ using System.Xml.Serialization;
 
 namespace WordsStudy.DataContext
 {
+    /// <summary>
+    /// This class represents model for storing words in xml file
+    /// </summary>
     [Serializable()]
     public class RecordModel
     {
